@@ -3,17 +3,20 @@ plugins {
 }
 
 android {
-    namespace = "com.example.triplog"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+
+    buildFeatures {
+        viewBinding = true
     }
+
+    namespace = "com.example.triplog"
+    compileSdk = 37
+
+
 
     defaultConfig {
         applicationId = "com.example.triplog"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -44,4 +47,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }
