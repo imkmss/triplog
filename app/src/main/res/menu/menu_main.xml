@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/menu_sort"
+        android:title="정렬 기준 변경" />
+
+    <item
+        android:id="@+id/menu_delete_all"
+        android:title="전체 삭제" />
+
+    <item
+        android:id="@+id/menu_info"
+        android:title="앱 정보" />
+
+</menu>
