@@ -11,6 +11,7 @@ class TripAdapter(
 ) : RecyclerView.Adapter<TripAdapter.ViewHolder>() {
 
     var onItemClick: ((TripRecord) -> Unit)? = null
+    var onItemLongClick: ((TripRecord) -> Unit)? = null
 
     inner class ViewHolder(val binding: RecordCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -19,6 +20,10 @@ class TripAdapter(
             binding.tvDate.text = record.visitDate
             binding.root.setOnClickListener {
                 onItemClick?.invoke(record)
+            }
+            binding.root.setOnLongClickListener {
+                onItemLongClick?.invoke(record)
+                true
             }
         }
     }
