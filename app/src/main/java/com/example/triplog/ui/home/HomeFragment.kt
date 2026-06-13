@@ -19,6 +19,8 @@ import com.example.triplog.R
 import com.example.triplog.data.DBHelper
 import com.example.triplog.databinding.FragmentHomeBinding
 import com.example.triplog.ui.edit.AddEditActivity
+import com.example.triplog.ui.DetailActivity
+
 
 class HomeFragment : Fragment() {
 
@@ -92,9 +94,9 @@ class HomeFragment : Fragment() {
 
         // 아이템 클릭 시 수정 화면으로 이동
         adapter.onItemClick = { record ->
-            val intent = Intent(requireContext(), AddEditActivity::class.java)
+            val intent = Intent(requireContext(), DetailActivity::class.java)
             intent.putExtra("record_no", record.no)
-            addEditLauncher.launch(intent)
+            startActivity(intent)
         }
 
         // 아이템 길게 누르기 - 컨텍스트 메뉴
