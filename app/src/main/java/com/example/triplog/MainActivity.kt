@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.triplog.databinding.ActivityMainBinding
 import com.example.triplog.ui.home.HomeFragment
+import com.example.triplog.ui.map.MapFragment
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,7 +23,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> replaceFragment(HomeFragment())
-                R.id.nav_map -> replaceFragment(HomeFragment())
+                R.id.nav_map -> replaceFragment(MapFragment())
             }
             true
         }
