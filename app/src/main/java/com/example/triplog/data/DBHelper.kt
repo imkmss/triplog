@@ -9,7 +9,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_V
 
     companion object {
         private const val DB_NAME = "triplog.db"
-        private const val DB_VERSION = 1
+        private const val DB_VERSION = 2
         private const val TABLE_NAME = "travel_record"
     }
 
@@ -20,16 +20,19 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_V
                     "place TEXT NOT NULL, " +
                     "visit_date TEXT NOT NULL, " +
                     "memo TEXT, " +
-                    "photo_uri TEXT)"
+                    "photo_uri TEXT, " +
+                    "latitude REAL DEFAULT 0.0, " +
+                    "longitude REAL DEFAULT 0.0)"
         )
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
-        onCreate(db)
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE travel_record ADD COLUMN latitude REAL DEFAULT 0.0")
+            db.execSQL("ALTER TABLE travel_record ADD COLUMN longitude REAL DEFAULT 0.0")
+        }
     }
 
-    // 추가
     fun insert(record: TripRecord): Long {
         val db = writableDatabase
         val values = ContentValues().apply {
@@ -37,11 +40,12 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_V
             put("visit_date", record.visitDate)
             put("memo", record.memo)
             put("photo_uri", record.photoUri)
+            put("latitude", record.latitude)
+            put("longitude", record.longitude)
         }
         return db.insert(TABLE_NAME, null, values)
     }
 
-    // 전체 조회
     fun getAll(order: String = "DESC"): List<TripRecord> {
         val list = mutableListOf<TripRecord>()
         val db = readableDatabase
@@ -54,7 +58,9 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_V
                         place = it.getString(it.getColumnIndexOrThrow("place")),
                         visitDate = it.getString(it.getColumnIndexOrThrow("visit_date")),
                         memo = it.getString(it.getColumnIndexOrThrow("memo")) ?: "",
-                        photoUri = it.getString(it.getColumnIndexOrThrow("photo_uri")) ?: ""
+                        photoUri = it.getString(it.getColumnIndexOrThrow("photo_uri")) ?: "",
+                        latitude = it.getDouble(it.getColumnIndexOrThrow("latitude")),
+                        longitude = it.getDouble(it.getColumnIndexOrThrow("longitude"))
                     )
                 )
             }
@@ -62,7 +68,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_V
         return list
     }
 
-    // 수정
     fun update(record: TripRecord): Int {
         val db = writableDatabase
         val values = ContentValues().apply {
@@ -70,17 +75,17 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_V
             put("visit_date", record.visitDate)
             put("memo", record.memo)
             put("photo_uri", record.photoUri)
+            put("latitude", record.latitude)
+            put("longitude", record.longitude)
         }
         return db.update(TABLE_NAME, values, "id = ?", arrayOf(record.no.toString()))
     }
 
-    // 삭제
     fun delete(no: Int): Int {
         val db = writableDatabase
         return db.delete(TABLE_NAME, "id = ?", arrayOf(no.toString()))
     }
 
-    // 전체삭제
     fun deleteAll(): Int {
         val db = writableDatabase
         return db.delete(TABLE_NAME, null, null)
