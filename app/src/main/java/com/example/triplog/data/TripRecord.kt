@@ -5,5 +5,7 @@ data class TripRecord(
     val place: String,
     val visitDate: String,
     val memo: String,
-    val photoUri: String = ""
+    val photoUri: String = "",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0
 )
