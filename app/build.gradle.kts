@@ -11,15 +11,14 @@ android {
     namespace = "com.example.triplog"
     compileSdk = 37
 
-
-
     defaultConfig {
         applicationId = "com.example.triplog"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
-
+        val mapsApiKey = project.findProperty("MAPS_API_KEY")?.toString() ?: ""
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -50,4 +49,6 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("com.google.android.material:material:1.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 }
