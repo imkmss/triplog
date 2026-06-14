@@ -1,10 +1,16 @@
 package com.example.triplog.ui.home
 
+import android.net.Uri
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.triplog.data.TripRecord
 import com.example.triplog.databinding.RecordCardBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TripAdapter(
     private val list: MutableList<TripRecord>
@@ -18,6 +24,38 @@ class TripAdapter(
         fun bind(record: TripRecord) {
             binding.tvPlace.text = record.place
             binding.tvDate.text = record.visitDate
+
+            if (record.photoUri.isNotEmpty()) {
+                binding.progressBar.visibility = View.VISIBLE
+                binding.ivThumbnail.visibility = View.INVISIBLE
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val uri = Uri.parse(record.photoUri)
+                        withContext(Dispatchers.Main) {
+                            try {
+                                binding.ivThumbnail.setImageURI(uri)
+                            } catch (e: Exception) {
+                                binding.ivThumbnail.setImageResource(android.R.drawable.ic_menu_gallery)
+                            } finally {
+                                binding.progressBar.visibility = View.GONE
+                                binding.ivThumbnail.visibility = View.VISIBLE
+                            }
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            binding.ivThumbnail.setImageResource(android.R.drawable.ic_menu_gallery)
+                            binding.progressBar.visibility = View.GONE
+                            binding.ivThumbnail.visibility = View.VISIBLE
+                        }
+                    }
+                }
+            } else {
+                binding.progressBar.visibility = View.GONE
+                binding.ivThumbnail.visibility = View.VISIBLE
+                binding.ivThumbnail.setImageResource(android.R.drawable.ic_menu_gallery)
+            }
+
             binding.root.setOnClickListener {
                 onItemClick?.invoke(record)
             }
