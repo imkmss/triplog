@@ -3,16 +3,26 @@ package com.example.triplog.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.example.triplog.MainActivity
+import com.example.triplog.R
 import com.example.triplog.data.DBHelper
 import com.example.triplog.databinding.ActivityDetailBinding
-import com.example.triplog.ui.edit.AddEditActivity
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 
-class DetailActivity : AppCompatActivity() {
+class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var binding: ActivityDetailBinding
     private lateinit var dbHelper: DBHelper
     private var recordNo: Int = -1
+    private var recordLatitude: Double = 0.0
+    private var recordLongitude: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +53,39 @@ class DetailActivity : AppCompatActivity() {
                 binding.ivPhoto.setImageResource(android.R.drawable.ic_menu_gallery)
             }
         }
+
+        // GPS 좌표가 있으면 지도 표시
+        if (record.latitude != 0.0 && record.longitude != 0.0) {
+            recordLatitude = record.latitude
+            recordLongitude = record.longitude
+            binding.mapContainer.visibility = View.VISIBLE
+
+            val mapFragment = supportFragmentManager
+                .findFragmentById(R.id.detailMap) as SupportMapFragment
+            mapFragment.getMapAsync(this)
+
+            // 지도 클릭 시 지도 탭으로 이동
+            binding.mapOverlay.setOnClickListener {
+                val intent = Intent(this, MainActivity::class.java)
+                intent.putExtra("navigate_to_map", true)
+                intent.putExtra("latitude", recordLatitude)
+                intent.putExtra("longitude", recordLongitude)
+                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                startActivity(intent)
+            }
+        }
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        val position = LatLng(recordLatitude, recordLongitude)
+        googleMap.addMarker(
+            MarkerOptions()
+                .position(position)
+                .title(binding.tvPlace.text.toString())
+        )
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 3.5f))
+        googleMap.uiSettings.isScrollGesturesEnabled = false
+        googleMap.uiSettings.isZoomGesturesEnabled = false
     }
 
     override fun onSupportNavigateUp(): Boolean {
