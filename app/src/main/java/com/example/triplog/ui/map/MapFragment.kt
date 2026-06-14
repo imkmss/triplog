@@ -29,7 +29,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         dbHelper = DBHelper(requireContext())
 
         val mapFragment = childFragmentManager
@@ -40,12 +39,17 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
-        // 기본 위치를 한국으로 설정
         val korea = LatLng(36.5, 127.5)
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(korea, 7f))
 
-        // DB에서 GPS 좌표가 있는 기록만 마커 표시
+        loadMarkers()
+    }
+
+    private fun loadMarkers() {
+        googleMap.clear()
         val records = dbHelper.getAll()
+
+        var hasMarker = false
         records.forEach { record ->
             if (record.latitude != 0.0 && record.longitude != 0.0) {
                 val position = LatLng(record.latitude, record.longitude)
@@ -55,7 +59,25 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                         .title(record.place)
                         .snippet(record.visitDate)
                 )
+                hasMarker = true
             }
+        }
+
+        // 마커가 있으면 첫 번째 마커로 카메라 이동
+        if (hasMarker) {
+            val firstRecord = records.first { it.latitude != 0.0 && it.longitude != 0.0 }
+            googleMap.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(firstRecord.latitude, firstRecord.longitude), 10f
+                )
+            )
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::googleMap.isInitialized) {
+            loadMarkers()
         }
     }
 }
