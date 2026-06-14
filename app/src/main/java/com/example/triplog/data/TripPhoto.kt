@@ -1,4 +1,8 @@
 package com.example.triplog.data
 
-class TripPhoto {
-}
+data class TripPhoto(
+    val id: Int = 0,
+    val recordId: Int,
+    val photoUri: String,
+    val isThumbnail: Boolean = false
+)
