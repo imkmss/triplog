@@ -37,7 +37,11 @@ class DetailActivity : AppCompatActivity() {
         binding.tvMemo.text = record.memo.ifEmpty { "메모 없음" }
 
         if (record.photoUri.isNotEmpty()) {
-            binding.ivPhoto.setImageURI(Uri.parse(record.photoUri))
+            try {
+                binding.ivPhoto.setImageURI(Uri.parse(record.photoUri))
+            } catch (e: Exception) {
+                binding.ivPhoto.setImageResource(android.R.drawable.ic_menu_gallery)
+            }
         }
     }
 
