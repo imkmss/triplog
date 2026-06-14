@@ -1,10 +1,10 @@
 package com.example.triplog.ui
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.triplog.MainActivity
 import com.example.triplog.R
 import com.example.triplog.data.DBHelper
@@ -20,6 +20,7 @@ class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var binding: ActivityDetailBinding
     private lateinit var dbHelper: DBHelper
+    private lateinit var photoAdapter: PhotoViewAdapter
     private var recordNo: Int = -1
     private var recordLatitude: Double = 0.0
     private var recordLongitude: Double = 0.0
@@ -35,6 +36,12 @@ class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "여행 상세"
 
+        photoAdapter = PhotoViewAdapter(mutableListOf())
+        binding.rvPhotos.layoutManager = LinearLayoutManager(
+            this, LinearLayoutManager.HORIZONTAL, false
+        )
+        binding.rvPhotos.adapter = photoAdapter
+
         loadRecord()
     }
 
@@ -46,13 +53,9 @@ class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.tvDate.text = record.visitDate
         binding.tvMemo.text = record.memo.ifEmpty { "메모 없음" }
 
-        if (record.photoUri.isNotEmpty()) {
-            try {
-                binding.ivPhoto.setImageURI(Uri.parse(record.photoUri))
-            } catch (e: Exception) {
-                binding.ivPhoto.setImageResource(android.R.drawable.ic_menu_gallery)
-            }
-        }
+        // 사진 목록 로딩
+        val photos = dbHelper.getPhotos(recordNo)
+        photoAdapter.updateList(photos.toMutableList())
 
         // GPS 좌표가 있으면 지도 표시
         if (record.latitude != 0.0 && record.longitude != 0.0) {
@@ -64,7 +67,6 @@ class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
                 .findFragmentById(R.id.detailMap) as SupportMapFragment
             mapFragment.getMapAsync(this)
 
-            // 지도 클릭 시 지도 탭으로 이동
             binding.mapOverlay.setOnClickListener {
                 val intent = Intent(this, MainActivity::class.java)
                 intent.putExtra("navigate_to_map", true)
@@ -83,7 +85,7 @@ class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
                 .position(position)
                 .title(binding.tvPlace.text.toString())
         )
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 3.5f))
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 14f))
         googleMap.uiSettings.isScrollGesturesEnabled = false
         googleMap.uiSettings.isZoomGesturesEnabled = false
     }
