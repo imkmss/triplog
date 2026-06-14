@@ -49,32 +49,31 @@
             android:id="@+id/etMemo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:gravity="top"
             android:hint="여행 메모 입력"
             android:inputType="textMultiLine"
-            android:minLines="3" />
+            android:minLines="3"
+            android:gravity="top"
+            android:layout_marginBottom="16dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="사진"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
 
-        <ImageView
-            android:id="@+id/ivPhoto"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPhotos"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:background="#EEEEEE"
-            android:layout_marginBottom="8dp"
-            android:src="@android:drawable/ic_menu_gallery" />
+            android:layout_height="130dp"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp" />
 
         <Button
             android:id="@+id/btnSelectPhoto"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="사진 선택"
+            android:text="사진 추가"
             android:layout_marginBottom="24dp" />
 
         <Button

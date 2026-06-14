@@ -10,7 +10,9 @@ import android.provider.MediaStore
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.triplog.data.DBHelper
+import com.example.triplog.data.TripPhoto
 import com.example.triplog.data.TripRecord
 import com.example.triplog.databinding.ActivityAddEditBinding
 import java.io.File
@@ -20,29 +22,27 @@ class AddEditActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAddEditBinding
     private lateinit var dbHelper: DBHelper
+    private lateinit var photoAdapter: PhotoAdapter
     private var editRecord: TripRecord? = null
-    private var selectedPhotoUri: Uri? = null
     private var cameraImageUri: Uri? = null
     private var extractedLatitude: Double = 0.0
     private var extractedLongitude: Double = 0.0
+    private val photoList = mutableListOf<TripPhoto>()
 
     private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            selectedPhotoUri = result.data?.data
-            selectedPhotoUri?.let { uri ->
-                try {
-                    contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                binding.ivPhoto.setImageURI(uri)
-                extractGpsFromPhoto(uri)
+            val uri = result.data?.data ?: return@registerForActivityResult
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+            extractGpsFromPhoto(uri)
+            addPhoto(uri.toString())
         }
     }
 
@@ -50,9 +50,10 @@ class AddEditActivity : AppCompatActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            selectedPhotoUri = cameraImageUri
-            binding.ivPhoto.setImageURI(selectedPhotoUri)
-            selectedPhotoUri?.let { extractGpsFromPhoto(it) }
+            cameraImageUri?.let { uri ->
+                extractGpsFromPhoto(uri)
+                addPhoto(uri.toString())
+            }
         }
     }
 
@@ -62,6 +63,22 @@ class AddEditActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         dbHelper = DBHelper(this)
+
+        photoAdapter = PhotoAdapter(
+            photoList,
+            onThumbnailSelected = { photo ->
+                photoAdapter.updateThumbnail(photo)
+            },
+            onPhotoDeleted = { photo ->
+                photoList.remove(photo)
+                photoAdapter.updateList(photoList)
+            }
+        )
+
+        binding.rvPhotos.layoutManager = LinearLayoutManager(
+            this, LinearLayoutManager.HORIZONTAL, false
+        )
+        binding.rvPhotos.adapter = photoAdapter
 
         val recordNo = intent.getIntExtra("record_no", -1)
         if (recordNo != -1) {
@@ -73,50 +90,44 @@ class AddEditActivity : AppCompatActivity() {
         }
 
         binding.etDate.isFocusable = false
-        binding.etDate.setOnClickListener {
-            showDatePickerDialog()
-        }
+        binding.etDate.setOnClickListener { showDatePickerDialog() }
+        binding.btnSelectPhoto.setOnClickListener { showPhotoPickerDialog() }
+        binding.btnSave.setOnClickListener { saveRecord() }
+    }
 
-        binding.btnSelectPhoto.setOnClickListener {
-            showPhotoPickerDialog()
-        }
-
-        binding.btnSave.setOnClickListener {
-            saveRecord()
-        }
+    private fun addPhoto(uri: String) {
+        val isFirst = photoList.isEmpty()
+        val photo = TripPhoto(
+            id = System.currentTimeMillis().toInt(),
+            recordId = editRecord?.no ?: 0,
+            photoUri = uri,
+            isThumbnail = isFirst
+        )
+        photoList.add(photo)
+        photoAdapter.notifyDataSetChanged()
+        binding.rvPhotos.scrollToPosition(photoList.size - 1)
     }
 
     private fun extractGpsFromPhoto(uri: Uri) {
         try {
             val inputStream = contentResolver.openInputStream(uri) ?: return
             val exif = ExifInterface(inputStream)
-
-            // GPS 추출
             val latLong = FloatArray(2)
             if (exif.getLatLong(latLong)) {
                 extractedLatitude = latLong[0].toDouble()
                 extractedLongitude = latLong[1].toDouble()
-            } else {
-                extractedLatitude = 0.0
-                extractedLongitude = 0.0
             }
-
-            // 날짜 추출
             val dateTime = exif.getAttribute(ExifInterface.TAG_DATETIME)
             if (dateTime != null) {
-                // EXIF 날짜 형식: "2024:03:12 15:30:00" → "2024-03-12"
                 val exifDate = dateTime.substring(0, 10).replace(":", "-")
                 val currentDate = binding.etDate.text.toString()
-
                 if (currentDate.isEmpty() || currentDate != exifDate) {
                     binding.etDate.setText(exifDate)
                 }
             }
-
             inputStream.close()
         } catch (e: Exception) {
-            extractedLatitude = 0.0
-            extractedLongitude = 0.0
+            e.printStackTrace()
         }
     }
 
@@ -130,8 +141,7 @@ class AddEditActivity : AppCompatActivity() {
         DatePickerDialog(
             this,
             { _, year, month, day ->
-                val formatted = String.format("%04d-%02d-%02d", year, month + 1, day)
-                binding.etDate.setText(formatted)
+                binding.etDate.setText(String.format("%04d-%02d-%02d", year, month + 1, day))
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
@@ -145,18 +155,11 @@ class AddEditActivity : AppCompatActivity() {
         binding.etMemo.setText(record.memo)
         extractedLatitude = record.latitude
         extractedLongitude = record.longitude
-        if (record.photoUri.isNotEmpty()) {
-            selectedPhotoUri = Uri.parse(record.photoUri)
-            try {
-                contentResolver.takePersistableUriPermission(
-                    selectedPhotoUri!!,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-                binding.ivPhoto.setImageURI(selectedPhotoUri)
-            } catch (e: Exception) {
-                binding.ivPhoto.setImageResource(android.R.drawable.ic_menu_gallery)
-            }
-        }
+
+        val photos = dbHelper.getPhotos(record.no)
+        photoList.clear()
+        photoList.addAll(photos)
+        photoAdapter.notifyDataSetChanged()
     }
 
     private fun showPhotoPickerDialog() {
@@ -175,9 +178,7 @@ class AddEditActivity : AppCompatActivity() {
     private fun openCamera() {
         val photoFile = File(getExternalFilesDir(null), "photo_${System.currentTimeMillis()}.jpg")
         cameraImageUri = FileProvider.getUriForFile(
-            this,
-            "${packageName}.fileprovider",
-            photoFile
+            this, "${packageName}.fileprovider", photoFile
         )
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
             putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri)
@@ -190,6 +191,7 @@ class AddEditActivity : AppCompatActivity() {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "image/*"
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
         }
         galleryLauncher.launch(intent)
     }
@@ -208,22 +210,27 @@ class AddEditActivity : AppCompatActivity() {
             return
         }
 
-        val photoUriString = selectedPhotoUri?.toString() ?: editRecord?.photoUri ?: ""
-
         val record = TripRecord(
             no = editRecord?.no ?: 0,
             place = place,
             visitDate = date,
             memo = memo,
-            photoUri = photoUriString,
+            photoUri = "",
             latitude = extractedLatitude,
             longitude = extractedLongitude
         )
 
-        if (editRecord == null) {
+        val recordId = if (editRecord == null) {
             dbHelper.insert(record)
         } else {
             dbHelper.update(record)
+            dbHelper.deletePhotos(record.no)
+            record.no.toLong()
+        }
+
+        // 사진 저장
+        photoList.forEach { photo ->
+            dbHelper.insertPhoto(recordId, photo.photoUri, photo.isThumbnail)
         }
 
         setResult(Activity.RESULT_OK)
