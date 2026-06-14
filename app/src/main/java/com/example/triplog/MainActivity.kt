@@ -27,6 +27,15 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+
+        // 상세 화면에서 지도로 이동 시
+        if (intent.getBooleanExtra("navigate_to_map", false)) {
+            val lat = intent.getDoubleExtra("latitude", 0.0)
+            val lng = intent.getDoubleExtra("longitude", 0.0)
+            val mapFragment = MapFragment.newInstance(lat, lng)
+            binding.bottomNav.selectedItemId = R.id.nav_map
+            replaceFragment(mapFragment)
+        }
     }
 
     fun replaceFragment(fragment: Fragment) {
