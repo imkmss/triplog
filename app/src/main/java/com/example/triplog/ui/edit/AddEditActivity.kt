@@ -3,6 +3,7 @@ package com.example.triplog.ui.edit
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -22,13 +23,26 @@ class AddEditActivity : AppCompatActivity() {
     private var editRecord: TripRecord? = null
     private var selectedPhotoUri: Uri? = null
     private var cameraImageUri: Uri? = null
+    private var extractedLatitude: Double = 0.0
+    private var extractedLongitude: Double = 0.0
 
     private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             selectedPhotoUri = result.data?.data
-            binding.ivPhoto.setImageURI(selectedPhotoUri)
+            selectedPhotoUri?.let { uri ->
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                binding.ivPhoto.setImageURI(uri)
+                extractGpsFromPhoto(uri)
+            }
         }
     }
 
@@ -38,6 +52,7 @@ class AddEditActivity : AppCompatActivity() {
         if (result.resultCode == Activity.RESULT_OK) {
             selectedPhotoUri = cameraImageUri
             binding.ivPhoto.setImageURI(selectedPhotoUri)
+            selectedPhotoUri?.let { extractGpsFromPhoto(it) }
         }
     }
 
@@ -57,7 +72,6 @@ class AddEditActivity : AppCompatActivity() {
             supportActionBar?.title = "기록 추가"
         }
 
-        // 날짜 필드 클릭 시 DatePickerDialog 표시
         binding.etDate.isFocusable = false
         binding.etDate.setOnClickListener {
             showDatePickerDialog()
@@ -72,16 +86,47 @@ class AddEditActivity : AppCompatActivity() {
         }
     }
 
+    private fun extractGpsFromPhoto(uri: Uri) {
+        try {
+            val inputStream = contentResolver.openInputStream(uri) ?: return
+            val exif = ExifInterface(inputStream)
+
+            // GPS 추출
+            val latLong = FloatArray(2)
+            if (exif.getLatLong(latLong)) {
+                extractedLatitude = latLong[0].toDouble()
+                extractedLongitude = latLong[1].toDouble()
+            } else {
+                extractedLatitude = 0.0
+                extractedLongitude = 0.0
+            }
+
+            // 날짜 추출
+            val dateTime = exif.getAttribute(ExifInterface.TAG_DATETIME)
+            if (dateTime != null) {
+                // EXIF 날짜 형식: "2024:03:12 15:30:00" → "2024-03-12"
+                val exifDate = dateTime.substring(0, 10).replace(":", "-")
+                val currentDate = binding.etDate.text.toString()
+
+                if (currentDate.isEmpty() || currentDate != exifDate) {
+                    binding.etDate.setText(exifDate)
+                }
+            }
+
+            inputStream.close()
+        } catch (e: Exception) {
+            extractedLatitude = 0.0
+            extractedLongitude = 0.0
+        }
+    }
+
     private fun showDatePickerDialog() {
         val calendar = Calendar.getInstance()
-
-        // 기존 날짜가 있으면 파싱해서 캘린더에 설정
         val existingDate = binding.etDate.text.toString()
         if (existingDate.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
             val parts = existingDate.split("-")
             calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
         }
-
         DatePickerDialog(
             this,
             { _, year, month, day ->
@@ -98,9 +143,19 @@ class AddEditActivity : AppCompatActivity() {
         binding.etPlace.setText(record.place)
         binding.etDate.setText(record.visitDate)
         binding.etMemo.setText(record.memo)
+        extractedLatitude = record.latitude
+        extractedLongitude = record.longitude
         if (record.photoUri.isNotEmpty()) {
             selectedPhotoUri = Uri.parse(record.photoUri)
-            binding.ivPhoto.setImageURI(selectedPhotoUri)
+            try {
+                contentResolver.takePersistableUriPermission(
+                    selectedPhotoUri!!,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                binding.ivPhoto.setImageURI(selectedPhotoUri)
+            } catch (e: Exception) {
+                binding.ivPhoto.setImageResource(android.R.drawable.ic_menu_gallery)
+            }
         }
     }
 
@@ -131,7 +186,11 @@ class AddEditActivity : AppCompatActivity() {
     }
 
     private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "image/*"
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
         galleryLauncher.launch(intent)
     }
 
@@ -156,7 +215,9 @@ class AddEditActivity : AppCompatActivity() {
             place = place,
             visitDate = date,
             memo = memo,
-            photoUri = photoUriString
+            photoUri = photoUriString,
+            latitude = extractedLatitude,
+            longitude = extractedLongitude
         )
 
         if (editRecord == null) {
