@@ -14,12 +14,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.triplog.R
 import com.example.triplog.data.DBHelper
 import com.example.triplog.databinding.FragmentHomeBinding
 import com.example.triplog.ui.edit.AddEditActivity
 import com.example.triplog.ui.DetailActivity
+import androidx.recyclerview.widget.GridLayoutManager
 
 
 class HomeFragment : Fragment() {
@@ -53,7 +53,7 @@ class HomeFragment : Fragment() {
         dbHelper = DBHelper(requireContext())
         adapter = TripAdapter(mutableListOf())
 
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.recyclerView.adapter = adapter
 
         // 옵션 메뉴 등록
