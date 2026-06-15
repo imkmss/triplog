@@ -28,7 +28,8 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var dbHelper: DBHelper
     private lateinit var adapter: TripAdapter
-    private var sortOrder = "DESC"
+    private var sortOrder = "ASC"
+    private var orderBy = "id"
 
     private val addEditLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -65,11 +66,17 @@ class HomeFragment : Fragment() {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.menu_sort -> {
-                        sortOrder = if (sortOrder == "DESC") "ASC" else "DESC"
+                        if (orderBy == "id") {
+                            orderBy = "visit_date"
+                            sortOrder = "ASC"
+                        } else {
+                            orderBy = "id"
+                            sortOrder = "ASC"
+                        }
                         loadData()
                         true
                     }
-                    R.id.menu_delete_all -> {
+                    R.id.menu_delete_all -> { // 목록 전체 삭제 선택
                         showDeleteAllDialog()
                         true
                     }
@@ -119,6 +126,7 @@ class HomeFragment : Fragment() {
         loadData()
     }
 
+    // 컨텍스트 메뉴 선택 삭제 시 호출 함수
     private fun showDeleteDialog(no: Int) {
         AlertDialog.Builder(requireContext())
             .setTitle("삭제 확인")
@@ -131,6 +139,7 @@ class HomeFragment : Fragment() {
             .show()
     }
 
+    // 전체 삭제 선택 시 호출 함수
     private fun showDeleteAllDialog() {
         AlertDialog.Builder(requireContext())
             .setTitle("전체 삭제 확인")
@@ -144,7 +153,7 @@ class HomeFragment : Fragment() {
     }
 
     fun loadData() {
-        val list = dbHelper.getAll(sortOrder)
+        val list = dbHelper.getAll(sortOrder, orderBy)
         adapter.updateList(list.toMutableList())
     }
 
