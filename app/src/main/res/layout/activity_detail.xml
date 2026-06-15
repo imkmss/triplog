@@ -98,6 +98,17 @@
 
         </FrameLayout>
 
+        <TextView
+            android:id="@+id/tvNoLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="위치 정보가 제공되지 않습니다."
+            android:textSize="14sp"
+            android:textColor="#888888"
+            android:gravity="center"
+            android:padding="16dp"
+            android:visibility="gone" />
+
     </LinearLayout>
 
 </ScrollView>

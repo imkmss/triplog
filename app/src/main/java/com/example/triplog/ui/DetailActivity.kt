@@ -53,15 +53,14 @@ class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.tvDate.text = record.visitDate
         binding.tvMemo.text = record.memo.ifEmpty { "메모 없음" }
 
-        // 사진 목록 로딩
         val photos = dbHelper.getPhotos(recordNo)
         photoAdapter.updateList(photos.toMutableList())
 
-        // GPS 좌표가 있으면 지도 표시
         if (record.latitude != 0.0 && record.longitude != 0.0) {
             recordLatitude = record.latitude
             recordLongitude = record.longitude
             binding.mapContainer.visibility = View.VISIBLE
+            binding.tvNoLocation.visibility = View.GONE
 
             val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.detailMap) as SupportMapFragment
@@ -75,6 +74,9 @@ class DetailActivity : AppCompatActivity(), OnMapReadyCallback {
                 intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                 startActivity(intent)
             }
+        } else {
+            binding.mapContainer.visibility = View.GONE
+            binding.tvNoLocation.visibility = View.VISIBLE
         }
     }
 
