@@ -74,10 +74,10 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_V
     }
 
     // 전체 조회
-    fun getAll(order: String = "DESC"): List<TripRecord> {
+    fun getAll(order: String = "DESC", orderBy: String = "id"): List<TripRecord> {
         val list = mutableListOf<TripRecord>()
         val db = readableDatabase
-        val cursor = db.query(TABLE_RECORD, null, null, null, null, null, "id $order")
+        val cursor = db.query(TABLE_RECORD, null, null, null, null, null, "$orderBy $order")
         cursor.use {
             while (it.moveToNext()) {
                 val no = it.getInt(it.getColumnIndexOrThrow("id"))
