@@ -116,6 +116,15 @@ class AddEditActivity : AppCompatActivity() {
             if (exif.getLatLong(latLong)) {
                 extractedLatitude = latLong[0].toDouble()
                 extractedLongitude = latLong[1].toDouble()
+            } else {
+                extractedLatitude = 0.0
+                extractedLongitude = 0.0
+                // GPS 정보 없을 때 알림
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("GPS 정보 없음")
+                    .setMessage("이 사진에는 GPS 정보가 없어 지도에 표시되지 않습니다.")
+                    .setPositiveButton("확인", null)
+                    .show()
             }
             val dateTime = exif.getAttribute(ExifInterface.TAG_DATETIME)
             if (dateTime != null) {
@@ -127,7 +136,8 @@ class AddEditActivity : AppCompatActivity() {
             }
             inputStream.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            extractedLatitude = 0.0
+            extractedLongitude = 0.0
         }
     }
 
